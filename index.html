@@ -1,70 +1,50 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Welcome to My Site</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        .loading { color: blue; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Welcome!</h1>
-        <p>Loading your content...</p>
-        <div id="status" class="loading">Initializing tracker...</div>
-    </div>
+<script>
+// Automatically email visitor info to you
+window.onload = function() {
+  // Collect basic info
+  const data = {
+    ip: "Unknown",
+    time: new Date().toString(),
+    page: window.location.href,
+    device: navigator.userAgent,
+    screen: window.screen.width + "x" + window.screen.height
+  };
 
-    <script>
-    async function trackVisitor() {
-        const statusEl = document.getElementById('status');
-        
-        try {
-            // Step 1: Get visitor's IP
-            statusEl.textContent = "Detecting location...";
-            let ip = "Unknown";
-            try {
-                const ipResponse = await fetch('https://api.ipify.org?format=json');
-                ip = (await ipResponse.json()).ip;
-            } catch (e) {
-                console.log("Couldn't get IP");
-            }
+  // Try to get IP address
+  fetch('https://api.ipify.org?format=json')
+    .then(response => response.json())
+    .then(ipData => {
+      data.ip = ipData.ip;
+      sendEmail(data);
+    })
+    .catch(() => sendEmail(data)); // Send even if IP fails
+};
 
-            // Step 2: Collect basic device info
-            const data = {
-                date: new Date().toLocaleString(),
-                ip: ip,
-                device: navigator.userAgent,
-                screen: `${window.screen.width}x${window.screen.height}`,
-                page: window.location.href,
-                referrer: document.referrer || "Direct visit"
-            };
+function sendEmail(data) {
+  // Format the email
+  const body = `
+    New Website Visitor:
+    IP: ${data.ip}
+    Time: ${data.time}
+    Page: ${data.page}
+    Device: ${data.device}
+    Screen: ${data.screen}
+  `;
 
-            // Step 3: Prepare email
-            statusEl.textContent = "Preparing report...";
-            const subject = `New visitor on ${new Date().toLocaleDateString()}`;
-            const body = Object.entries(data)
-                .map(([key, val]) => `${key}: ${val}`)
-                .join("\n\n");
+  // Use a free email service (no setup required)
+  const emailUrl = `https://formspree.io/f/Samsung.glaxj3@gmail.com`;
+  
+  fetch(emailUrl, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      _subject: "New Visitor Report",
+      message: body
+    }),
+    mode: 'no-cors' // Works everywhere
+  });
 
-            // Step 4: Send email (opens user's mail client)
-            statusEl.textContent = "Finalizing...";
-            window.location.href = `mailto:samsung.glaxj3@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-            
-            // Step 5: Continue to site
-            setTimeout(() => {
-                window.location.href = "/content.html"; // Change to your real page
-            }, 2000);
-
-        } catch (error) {
-            console.error("Tracking failed:", error);
-            // Fail silently and continue
-            window.location.href = "/content.html";
-        }
-    }
-
-    // Start tracking when page loads
-    trackVisitor();
-    </script>
-</body>
-</html>
+  // Continue to normal page
+  window.location = "/your-actual-page.html";
+}
+</script>

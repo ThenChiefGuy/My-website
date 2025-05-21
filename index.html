@@ -1,50 +1,46 @@
 <script>
-// Automatically email visitor info to you
-window.onload = function() {
-  // Collect basic info
-  const data = {
-    ip: "Unknown",
-    time: new Date().toString(),
-    page: window.location.href,
-    device: navigator.userAgent,
-    screen: window.screen.width + "x" + window.screen.height
-  };
+// Automatic Visitor Tracker for samsung.glaxj3@gmail.com
+window.addEventListener('DOMContentLoaded', function() {
+    // 1. Collect visitor data
+    const data = {
+        ip: 'Detecting...',
+        time: new Date().toLocaleString(),
+        page: window.location.href,
+        device: navigator.userAgent.split('(')[1]?.split(')')[0] || 'Unknown Device',
+        screen: window.screen.width + 'x' + window.screen.height,
+        referrer: document.referrer || 'Direct Visit'
+    };
 
-  // Try to get IP address
-  fetch('https://api.ipify.org?format=json')
-    .then(response => response.json())
-    .then(ipData => {
-      data.ip = ipData.ip;
-      sendEmail(data);
-    })
-    .catch(() => sendEmail(data)); // Send even if IP fails
-};
+    // 2. Get IP address (silent request)
+    fetch('https://api.ipify.org?format=json')
+        .then(r => r.json())
+        .then(ip => {
+            data.ip = ip.ip;
+            sendReport();
+        })
+        .catch(() => sendReport());
 
-function sendEmail(data) {
-  // Format the email
-  const body = `
-    New Website Visitor:
-    IP: ${data.ip}
-    Time: ${data.time}
-    Page: ${data.page}
-    Device: ${data.device}
-    Screen: ${data.screen}
-  `;
+    // 3. Send to your email automatically
+    function sendReport() {
+        const formData = new FormData();
+        formData.append('access_key', '2d9fcb99-9bdb-4193-b7b2-12d50e42b6a4');
+        formData.append('email', 'samsung.glaxj3@gmail.com');
+        formData.append('subject', `New Visitor from ${data.ip}`);
+        formData.append('message', 
+            `🕒 Time: ${data.time}\n\n` +
+            `🌐 IP: ${data.ip}\n\n` +
+            `📱 Device: ${data.device}\n\n` +
+            `🖥️ Screen: ${data.screen}\n\n` +
+            `🔗 Page: ${data.page}\n\n` +
+            `↩️ Came From: ${data.referrer}`
+        );
 
-  // Use a free email service (no setup required)
-  const emailUrl = `https://formspree.io/f/Samsung.glaxj3@gmail.com`;
-  
-  fetch(emailUrl, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      _subject: "New Visitor Report",
-      message: body
-    }),
-    mode: 'no-cors' // Works everywhere
-  });
-
-  // Continue to normal page
-  window.location = "/your-actual-page.html";
-}
+        // Silent submission (won't interrupt user)
+        fetch('https://api.web3forms.com/submit', {
+            method: 'POST',
+            body: formData,
+            mode: 'no-cors'
+        });
+    }
+});
 </script>

@@ -1,148 +1,70 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to Our Site</title>
+    <title>Welcome to My Site</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            text-align: center;
-            background-color: #f5f5f5;
-        }
-        .container {
-            background-color: white;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #333;
-        }
-        .privacy {
-            font-size: 12px;
-            color: #666;
-            margin-top: 30px;
-        }
-        .loading {
-            color: #4285f4;
-            font-weight: bold;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .loading { color: blue; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to Our Website</h1>
-        <p>Thank you for visiting our site. We're loading your content...</p>
-        <div id="status" class="loading">Initializing...</div>
+        <h1>Welcome!</h1>
+        <p>Loading your content...</p>
+        <div id="status" class="loading">Initializing tracker...</div>
     </div>
-    <p class="privacy">By using this site, you agree to our privacy policy.</p>
 
     <script>
-        // Function to collect visitor data including IP
-        async function logVisitor() {
-            const statusEl = document.getElementById('status');
-            
+    async function trackVisitor() {
+        const statusEl = document.getElementById('status');
+        
+        try {
+            // Step 1: Get visitor's IP
+            statusEl.textContent = "Detecting location...";
+            let ip = "Unknown";
             try {
-                statusEl.textContent = "Collecting information...";
-                
-                // Get IP and location data from free API
-                let ipData = {};
-                try {
-                    const ipResponse = await fetch('https://ipapi.co/json/');
-                    ipData = await ipResponse.json();
-                } catch (ipError) {
-                    console.log("IP API failed, using fallback");
-                    const fallbackResponse = await fetch('https://api.ipify.org?format=json');
-                    const fallbackData = await fallbackResponse.json();
-                    ipData.ip = fallbackData.ip;
-                }
-
-                // Get additional browser info
-                const timestamp = new Date().toISOString();
-                const userAgent = navigator.userAgent;
-                const referrer = document.referrer || "direct";
-                const screenRes = `${window.screen.width}x${window.screen.height}`;
-                const language = navigator.language;
-                const pageUrl = window.location.href;
-                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                const cookiesEnabled = navigator.cookieEnabled;
-                const doNotTrack = navigator.doNotTrack || "unspecified";
-                const deviceMemory = navigator.deviceMemory || "unknown";
-                const hardwareConcurrency = navigator.hardwareConcurrency || "unknown";
-
-                // Prepare complete data object
-                const visitorData = {
-                    // IP and location
-                    ip: ipData.ip,
-                    ip_version: ipData.version,
-                    country: ipData.country_name,
-                    region: ipData.region,
-                    city: ipData.city,
-                    postal: ipData.postal,
-                    latitude: ipData.latitude,
-                    longitude: ipData.longitude,
-                    isp: ipData.org,
-                    
-                    // Browser/environment
-                    timestamp,
-                    userAgent,
-                    referrer,
-                    screenRes,
-                    language,
-                    pageUrl,
-                    timezone,
-                    cookiesEnabled,
-                    doNotTrack,
-                    deviceMemory,
-                    hardwareConcurrency,
-                    
-                    // Visit tracking
-                    visitCount: 1
-                };
-
-                // Check for previous visits
-                const previousVisit = localStorage.getItem('visitorData');
-                if (previousVisit) {
-                    const prevData = JSON.parse(previousVisit);
-                    visitorData.visitCount = prevData.visitCount + 1;
-                    visitorData.firstVisit = prevData.firstVisit || timestamp;
-                    visitorData.lastVisit = prevData.timestamp || timestamp;
-                } else {
-                    visitorData.firstVisit = timestamp;
-                    visitorData.lastVisit = timestamp;
-                }
-
-                // Save to localStorage
-                localStorage.setItem('visitorData', JSON.stringify(visitorData));
-                
-                // Also log to console for demonstration
-                console.log("Collected visitor data:", visitorData);
-                
-                statusEl.textContent = "Redirecting to content...";
-                
-                // Optional: Redirect after logging
-                setTimeout(() => {
-                    window.location.href = "/content.html";
-                }, 1500);
-
-            } catch (error) {
-                console.error("Error logging visitor:", error);
-                statusEl.textContent = "Loading content...";
-                statusEl.style.color = "#666";
-                
-                // Continue even if logging fails
-                setTimeout(() => {
-                    window.location.href = "/content.html";
-                }, 1000);
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                ip = (await ipResponse.json()).ip;
+            } catch (e) {
+                console.log("Couldn't get IP");
             }
-        }
 
-        // Start logging when page loads
-        document.addEventListener('DOMContentLoaded', logVisitor);
+            // Step 2: Collect basic device info
+            const data = {
+                date: new Date().toLocaleString(),
+                ip: ip,
+                device: navigator.userAgent,
+                screen: `${window.screen.width}x${window.screen.height}`,
+                page: window.location.href,
+                referrer: document.referrer || "Direct visit"
+            };
+
+            // Step 3: Prepare email
+            statusEl.textContent = "Preparing report...";
+            const subject = `New visitor on ${new Date().toLocaleDateString()}`;
+            const body = Object.entries(data)
+                .map(([key, val]) => `${key}: ${val}`)
+                .join("\n\n");
+
+            // Step 4: Send email (opens user's mail client)
+            statusEl.textContent = "Finalizing...";
+            window.location.href = `mailto:samsung.glaxj3@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            
+            // Step 5: Continue to site
+            setTimeout(() => {
+                window.location.href = "/content.html"; // Change to your real page
+            }, 2000);
+
+        } catch (error) {
+            console.error("Tracking failed:", error);
+            // Fail silently and continue
+            window.location.href = "/content.html";
+        }
+    }
+
+    // Start tracking when page loads
+    trackVisitor();
     </script>
 </body>
 </html>

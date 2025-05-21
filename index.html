@@ -1,32 +1,48 @@
-<script>
-// Automatic Visitor Tracker for samsung.glaxj3@gmail.com
-window.addEventListener('DOMContentLoaded', function() {
-    // 1. Collect visitor data
-    const data = {
-        ip: 'Detecting...',
-        time: new Date().toLocaleString(),
-        page: window.location.href,
-        device: navigator.userAgent.split('(')[1]?.split(')')[0] || 'Unknown Device',
-        screen: window.screen.width + 'x' + window.screen.height,
-        referrer: document.referrer || 'Direct Visit'
-    };
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome to My Site</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .loading { color: blue; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome!</h1>
+        <p>Loading your content...</p>
+        <div id="status" class="loading">Initializing tracker...</div>
+    </div>
 
-    // 2. Get IP address (silent request)
-    fetch('https://api.ipify.org?format=json')
-        .then(r => r.json())
-        .then(ip => {
-            data.ip = ip.ip;
-            sendReport();
-        })
-        .catch(() => sendReport());
+    <script>
+    async function trackVisitor() {
+        const statusEl = document.getElementById('status');
+        statusEl.textContent = "Detecting location...";
 
-    // 3. Send to your email automatically
-    function sendReport() {
+        const data = {
+            ip: 'Detecting...',
+            time: new Date().toLocaleString(),
+            page: window.location.href,
+            device: navigator.userAgent.split('(')[1]?.split(')')[0] || 'Unknown Device',
+            screen: window.screen.width + 'x' + window.screen.height,
+            referrer: document.referrer || 'Direct Visit'
+        };
+
+        try {
+            const ipResponse = await fetch('https://api.ipify.org?format=json');
+            data.ip = (await ipResponse.json()).ip;
+        } catch (e) {
+            console.log("IP fetch failed");
+        }
+
+        statusEl.textContent = "Preparing report...";
+
         const formData = new FormData();
         formData.append('access_key', '2d9fcb99-9bdb-4193-b7b2-12d50e42b6a4');
         formData.append('email', 'samsung.glaxj3@gmail.com');
         formData.append('subject', `New Visitor from ${data.ip}`);
-        formData.append('message', 
+        formData.append('message',
             `🕒 Time: ${data.time}\n\n` +
             `🌐 IP: ${data.ip}\n\n` +
             `📱 Device: ${data.device}\n\n` +
@@ -35,12 +51,21 @@ window.addEventListener('DOMContentLoaded', function() {
             `↩️ Came From: ${data.referrer}`
         );
 
-        // Silent submission (won't interrupt user)
+        // Send silently
         fetch('https://api.web3forms.com/submit', {
             method: 'POST',
             body: formData,
             mode: 'no-cors'
         });
+
+        statusEl.textContent = "Finalizing...";
+        setTimeout(() => {
+            window.location.href = "/content.html"; // Replace with your actual page
+        }, 2000);
     }
-});
-</script>
+
+    // Start tracking on page load
+    window.addEventListener('DOMContentLoaded', trackVisitor);
+    </script>
+</body>
+</html>

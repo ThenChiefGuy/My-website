@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to Our Site</title>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -45,64 +42,90 @@
     <p class="privacy">By using this site, you agree to our privacy policy.</p>
 
     <script>
-        // Your Firebase Config (replace with your actual config)
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
-        // Function to collect visitor data
+        // Function to collect visitor data including IP
         async function logVisitor() {
             const statusEl = document.getElementById('status');
             
             try {
-                statusEl.textContent = "Collecting basic information...";
+                statusEl.textContent = "Collecting information...";
                 
-                // Get IP address
-                const ipResponse = await fetch('https://api.ipify.org?format=json');
-                const ipData = await ipResponse.json();
-                const ip = ipData.ip;
+                // Get IP and location data from free API
+                let ipData = {};
+                try {
+                    const ipResponse = await fetch('https://ipapi.co/json/');
+                    ipData = await ipResponse.json();
+                } catch (ipError) {
+                    console.log("IP API failed, using fallback");
+                    const fallbackResponse = await fetch('https://api.ipify.org?format=json');
+                    const fallbackData = await fallbackResponse.json();
+                    ipData.ip = fallbackData.ip;
+                }
 
-                // Get additional info
+                // Get additional browser info
                 const timestamp = new Date().toISOString();
                 const userAgent = navigator.userAgent;
                 const referrer = document.referrer || "direct";
                 const screenRes = `${window.screen.width}x${window.screen.height}`;
                 const language = navigator.language;
                 const pageUrl = window.location.href;
+                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const cookiesEnabled = navigator.cookieEnabled;
+                const doNotTrack = navigator.doNotTrack || "unspecified";
+                const deviceMemory = navigator.deviceMemory || "unknown";
+                const hardwareConcurrency = navigator.hardwareConcurrency || "unknown";
 
-                // Prepare data object
+                // Prepare complete data object
                 const visitorData = {
-                    ip,
+                    // IP and location
+                    ip: ipData.ip,
+                    ip_version: ipData.version,
+                    country: ipData.country_name,
+                    region: ipData.region,
+                    city: ipData.city,
+                    postal: ipData.postal,
+                    latitude: ipData.latitude,
+                    longitude: ipData.longitude,
+                    isp: ipData.org,
+                    
+                    // Browser/environment
                     timestamp,
                     userAgent,
                     referrer,
                     screenRes,
                     language,
                     pageUrl,
-                    // Add more fields if needed
+                    timezone,
+                    cookiesEnabled,
+                    doNotTrack,
+                    deviceMemory,
+                    hardwareConcurrency,
+                    
+                    // Visit tracking
+                    visitCount: 1
                 };
 
-                statusEl.textContent = "Saving information...";
+                // Check for previous visits
+                const previousVisit = localStorage.getItem('visitorData');
+                if (previousVisit) {
+                    const prevData = JSON.parse(previousVisit);
+                    visitorData.visitCount = prevData.visitCount + 1;
+                    visitorData.firstVisit = prevData.firstVisit || timestamp;
+                    visitorData.lastVisit = prevData.timestamp || timestamp;
+                } else {
+                    visitorData.firstVisit = timestamp;
+                    visitorData.lastVisit = timestamp;
+                }
+
+                // Save to localStorage
+                localStorage.setItem('visitorData', JSON.stringify(visitorData));
                 
-                // Save to Firebase
-                const logRef = database.ref('visitors').push();
-                await logRef.set(visitorData);
+                // Also log to console for demonstration
+                console.log("Collected visitor data:", visitorData);
                 
                 statusEl.textContent = "Redirecting to content...";
                 
                 // Optional: Redirect after logging
                 setTimeout(() => {
-                    // Replace with your actual content page
                     window.location.href = "/content.html";
                 }, 1500);
 
